@@ -1,12 +1,11 @@
 package com.karumi.todoapiclient
 
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import todoapiclient.TodoApiClient
 import todoapiclient.dto.TaskDto
+import todoapiclient.exception.UnknownApiError
 
 class TodoApiClientTest : MockWebServerTest() {
 
@@ -45,6 +44,33 @@ class TodoApiClientTest : MockWebServerTest() {
 
         assertEquals(200, tasks.size.toLong())
         assertTaskContainsExpectedValues(tasks[0])
+    }
+
+    @Test
+    fun shouldReturnUnauthorizedIf403WhenGettingTasks() {
+        enqueueMockResponse(403)
+
+        val error = apiClient.allTasks.left
+
+        assertEquals(UnknownApiError(403), error)
+    }
+
+    @Test
+    fun shouldReturnErrorIf500WhenGettingTasks() {
+        enqueueMockResponse(500)
+
+        val error = apiClient.allTasks.left
+
+        assertEquals(UnknownApiError(500), error)
+    }
+
+    @Test
+    fun shouldReturnEmptyListWhenGettingTasks() {
+        enqueueMockResponse(200, "getTasksEmptyResponse.json")
+
+        val emptyList = apiClient.allTasks.right!!
+
+        assertEquals(0, emptyList.size)
     }
 
     private fun assertTaskContainsExpectedValues(task: TaskDto?) {
